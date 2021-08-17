@@ -827,14 +827,15 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     n, c, h, w = x.shape
     out = np.zeros(x.shape)
     cache = []
+
+    gamma = gamma.reshape(c)
+    beta = beta.reshape(c)
     size = int(c / G)
     for g in range(G):
         gx = x[:, g * size:(g+1) * size, :, :]
         gx_feature = np.transpose(gx, axes=(0, 2, 3, 1))
         gx_flatten = gx_feature.reshape(n * h * w, size)
-        print(gx_flatten.shape)
         out_flatten, g_cache = layernorm_forward(gx_flatten, gamma[g * size:(g+1) * size], beta[g * size:(g+1) * size], gn_param)
-        print(out_flatten.shape)
         cache.append(g_cache)
         out_feature = out_flatten.reshape(n, h, w, size)
         gout = np.transpose(out_feature, axes=(0, 3, 1, 2))
@@ -868,8 +869,20 @@ def spatial_groupnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    dx = np.zeros(dout.shape)
+    n, c, h, w = dout.shape
+    dgamma = np.zeros(c)
+    dbeta = np.zeros(c)
+    G = len(cache)
+    size = int(c / G)
+    for g in range(G):
+        gdout = dout[:, g * size:(g+1) * size, :, :]
+        gdout_feature = np.transpose(gdout, axes=(0, 2, 3, 1)).reshape(n * h * w, size)
+        gdx_flatten, dgamma[g * size:(g+1) * size], dbeta[g * size:(g+1) * size] = layernorm_backward(gdout_feature, cache[g])
+        gdx_feature = gdx_flatten.reshape(n, h, w, size)
+        dx[:, g * size:(g+1) * size, :, :] = np.transpose(gdx_feature, axes=(0, 3, 1, 2))
+    dgamma = dgamma.reshape((1, c, 1, 1))
+    dbeta = dbeta.reshape((1, c, 1, 1))
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
