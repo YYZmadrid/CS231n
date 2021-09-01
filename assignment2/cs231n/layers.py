@@ -450,12 +450,13 @@ def dropout_forward(x, dropout_param):
 
     if mode == "train":
         #######################################################################
-        # TODO: Implement training phase forward pass for inverted dropout.   #
+        # Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        mask = (np.random.rand(*x.shape) < p)/p
+        out = x * mask
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -463,11 +464,11 @@ def dropout_forward(x, dropout_param):
         #######################################################################
     elif mode == "test":
         #######################################################################
-        # TODO: Implement testing phase forward pass for inverted dropout.   #
+        # Implement testing phase forward pass for inverted dropout.   #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out = x
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -494,11 +495,11 @@ def dropout_backward(dout, cache):
     dx = None
     if mode == "train":
         #######################################################################
-        # TODO: Implement training phase backward pass for inverted dropout   #
+        # Implement training phase backward pass for inverted dropout   #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        dx = dout * mask
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -817,7 +818,7 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     out, cache = None, None
     eps = gn_param.get("eps", 1e-5)
     ###########################################################################
-    # TODO: Implement the forward pass for spatial group normalization.       #
+    # Implement the forward pass for spatial group normalization.       #
     # This will be extremely similar to the layer norm implementation.        #
     # In particular, think about how you could transform the matrix so that   #
     # the bulk of the code is similar to both train-time batch normalization  #
@@ -864,7 +865,7 @@ def spatial_groupnorm_backward(dout, cache):
     dx, dgamma, dbeta = None, None, None
 
     ###########################################################################
-    # TODO: Implement the backward pass for spatial group normalization.      #
+    # Implement the backward pass for spatial group normalization.      #
     # This will be extremely similar to the layer norm implementation.        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****

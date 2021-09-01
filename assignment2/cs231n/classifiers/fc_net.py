@@ -191,7 +191,7 @@ class FullyConnectedNet(object):
         self.params = {}
 
         ############################################################################
-        # TODO: Initialize the parameters of the network, storing all values in    #
+        # Initialize the parameters of the network, storing all values in    #
         # the self.params dictionary. Store weights and biases for the first layer #
         # in W1 and b1; for the second layer use W2 and b2, etc. Weights should be #
         # initialized from a normal distribution centered at 0 with standard       #
@@ -265,7 +265,7 @@ class FullyConnectedNet(object):
                 bn_param["mode"] = mode
         scores = None
         ############################################################################
-        # TODO : Implement the forward pass for the fully-connected net, computing  #
+        # Implement the forward pass for the fully-connected net, computing  #
         # the class scores for X and storing them in the scores variable.          #
         #                                                                          #
         # When using dropout, you'll need to pass self.dropout_param to each       #
@@ -294,11 +294,15 @@ class FullyConnectedNet(object):
                     hidden_layer, hidden_layer_cache_now = affine_bn_relu_forward(hidden_layer, W, b, gamma, beta, self.bn_params[i-1])
                 else:
                     hidden_layer, hidden_layer_cache_now = affine_ln_relu_forward(hidden_layer, W, b, gamma, beta, self.bn_params[i-1])
-                hidden_layer_cache.append(hidden_layer_cache_now)
 
             else:
                 hidden_layer, hidden_layer_cache_now = affine_relu_forward(hidden_layer, W, b)
-                hidden_layer_cache.append(hidden_layer_cache_now)
+            
+            if self.use_dropout:
+                hidden_layer, dropout_cache = dropout_forward(hidden_layer, self.dropout_param)
+                hidden_layer_cache_now = (hidden_layer_cache_now, dropout_cache)
+            
+            hidden_layer_cache.append(hidden_layer_cache_now)
 
         W = self.params["W" + str(self.num_layers)]
         b = self.params["b" + str(self.num_layers)]
@@ -315,7 +319,7 @@ class FullyConnectedNet(object):
 
         loss, grads = 0.0, {}
         ############################################################################
-        # TODO : Implement the backward pass for the fully-connected net. Store the #
+        # Implement the backward pass for the fully-connected net. Store the #
         # loss in the loss variable and gradients in the grads dictionary. Compute #
         # data loss using softmax, and make sure that grads[k] holds the gradients #
         # for self.params[k]. Don't forget to add L2 regularization!               #
@@ -335,16 +339,21 @@ class FullyConnectedNet(object):
         grads["W" + str(self.num_layers)] = d_W + self.reg * self.params["W" + str(self.num_layers)]
         grads["b" + str(self.num_layers)] = d_b
         for i in range(self.num_layers - 1, 0, -1):
-            # add batch normalization
+           
+            d_hidden_layer_cache_now = hidden_layer_cache[i]
+            if self.use_dropout:
+                d_hidden_layer_cache_now, dropout_cache = d_hidden_layer_cache_now
+                d_hidden_layer = dropout_backward(d_hidden_layer, dropout_cache)
+
             if self.normalization == "batchnorm" or self.normalization == "layernorm":
                 if self.normalization == "batchnorm":
-                    d_hidden_layer, d_W, d_b, dgamma, dbeta = affine_bn_relu_backward(d_hidden_layer, hidden_layer_cache[i])
+                    d_hidden_layer, d_W, d_b, dgamma, dbeta = affine_bn_relu_backward(d_hidden_layer, d_hidden_layer_cache_now)
                 else:
-                    d_hidden_layer, d_W, d_b, dgamma, dbeta = affine_ln_relu_backward(d_hidden_layer, hidden_layer_cache[i])
+                    d_hidden_layer, d_W, d_b, dgamma, dbeta = affine_ln_relu_backward(d_hidden_layer, d_hidden_layer_cache_now)
                 grads["gamma" + str(i)] = dgamma
                 grads["beta" + str(i)]= dbeta
             else:
-                d_hidden_layer, d_W, d_b = affine_relu_backward(d_hidden_layer, hidden_layer_cache[i])
+                d_hidden_layer, d_W, d_b = affine_relu_backward(d_hidden_layer, d_hidden_layer_cache_now)
 
             grads["W" + str(i)] = d_W + self.reg * self.params["W" + str(i)]
             grads["b" + str(i)] = d_b
